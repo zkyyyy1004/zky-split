@@ -194,7 +194,7 @@ td .cp { padding: 4px 8px; }
     <div class="head-text">
       <h1><span class="h1-pre">쿠즈키 같은 공대장들을 위한</span>5% 수수료 계산기</h1>
       <p class="sub">판매 금액을 넣으면 수수료 5%를 빼고, 공대원끼리 얼마씩 나눌지까지 계산해요.</p>
-      <p class="maker">made by <b>쿠즈키</b> · zky</p>
+      <p class="maker">made by <b>쿠즈키</b> · yyyy1004</p>
     </div>
     <div class="theme" role="group" aria-label="화면 모드">
       <button type="button" id="th-light" aria-pressed="false">☀ 밝게</button>
@@ -347,14 +347,14 @@ td .cp { padding: 4px 8px; }
     </div>
   </section>
 
-  <p class="foot">
-    비율은 기본 1이에요. 공대장만 더 받으면 1.5, 절반만 받는 사람은 0.5처럼 적으면 그 비율대로 나눠요.
-    "0 자동 붙이기"를 000으로 두면 47만 쳐도 47,000으로, 0000으로 두면 470,000으로 들어가요(공통 비용 칸도 같아요).
-    메모 칸은 한 번 쓴 이름을 기억해 두었다가 다음에 목록으로 보여줘요.
-    엑셀에서 금액 열을 복사해 금액 칸에 붙여넣으면 여러 줄이 한 번에 채워지고, 붙여넣은 값은 0을 붙이지 않고 그대로 들어가요.
+   <p class="foot">
+    비율은 기본 1이에요. 공대장만 더 받으면 1.5, 절반만 받는 사람은 0.5처럼 적으면 그 비율대로 나눠요.<br>
+    "0 자동 붙이기"를 000으로 두면 47만 쳐도 47,000으로, 0000으로 두면 470,000으로 들어가요(공통 비용 칸도 같아요).<br>
+    메모 칸은 한 번 쓴 이름을 기억해 두었다가 다음에 목록으로 보여줘요.<br>
+    엑셀에서 금액 열을 복사해 금액 칸에 붙여넣으면 여러 줄이 한 번에 채워지고, 붙여넣은 값은 0을 붙이지 않고 그대로 들어가요.<br>
     수수료와 분배 금액은 1 단위 미만을 버림해서 계산하고, 입력한 내용은 이 브라우저에 저장돼요.
   </p>
-  <p class="foot credit">© 쿠즈키 (zky)</p>
+  <p class="foot credit">© 쿠즈키 (zkyyyyy1004)</p>
 </main>
 
 <div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-label="분배 결과 이미지">
@@ -839,7 +839,7 @@ async function makeImage() {
   const d = new Date();
   const ds = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   text(ds, P + 108, y + 80, `500 14px ${M}`, C.muted);
-  text('made by 쿠즈키 · zky', W - P, y + 22, `500 14px ${F}`, C.accent, 'right');
+  text('made by 쿠즈키 · zkyyyyy1004', W - P, y + 22, `500 14px ${F}`, C.accent, 'right');
   y += 110 + 30;
 
   // 판매 목록
@@ -931,7 +931,7 @@ $('img-down').onclick = () => {
   const d = new Date();
   const a = document.createElement('a');
   a.href = imgUrl;
-  a.download = `zky-split-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}.png`;
+  a.download = `zkyyyyy1004-split-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}.png`;
   document.body.appendChild(a); a.click(); a.remove();
 };
 $('img-copy').onclick = async () => {
