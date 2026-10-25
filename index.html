@@ -186,6 +186,7 @@ td .cp { padding: 4px 8px; }
 </head>
 <body>
 
+<script>try { document.documentElement.dataset.theme = localStorage.getItem('fee-calc-theme') === 'light' ? 'light' : 'dark'; } catch (e) { document.documentElement.dataset.theme = 'dark'; }</script>
 
 <main>
   <header class="head">
@@ -956,7 +957,7 @@ $('th-light').onclick = () => { applyTheme('light'); try { localStorage.setItem(
 $('th-dark').onclick = () => { applyTheme('dark'); try { localStorage.setItem(TKEY, 'dark'); } catch (e) {} };
 let savedTheme = null;
 try { savedTheme = localStorage.getItem(TKEY); } catch (e) {}
-applyTheme(savedTheme);
+applyTheme(savedTheme === 'light' ? 'light' : 'dark');
 
 /* ---------- 인원별 체크 열기 ---------- */
 function setShow(on) {
