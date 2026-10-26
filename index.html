@@ -90,6 +90,7 @@ button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 #tbl { min-width: 760px; }
 #mtbl { min-width: 560px; }
+#ftbl { min-width: 560px; }
 .mbox { display: flex; flex-direction: column; gap: 14px; }
 .toggle { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; font-size: 0.92rem; font-weight: 500; align-self: flex-start; user-select: none; }
 .toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
@@ -194,7 +195,7 @@ td .cp { padding: 4px 8px; }
     <div class="head-text">
       <h1><span class="h1-pre">쿠즈키 같은 공대장들을 위한</span>5% 수수료 계산기</h1>
       <p class="sub">판매 금액을 넣으면 수수료 5%를 빼고, 공대원끼리 얼마씩 나눌지까지 계산해요.</p>
-      <p class="maker">made by <b>쿠즈키</b> · zyyyy1004</p>
+      <p class="maker">made by <b>쿠즈키</b> · zkyyyy1004</p>
     </div>
     <div class="theme" role="group" aria-label="화면 모드">
       <button type="button" id="th-light" aria-pressed="false">☀ 밝게</button>
@@ -260,6 +261,43 @@ td .cp { padding: 4px 8px; }
       <button type="button" class="btn" id="add5">+ 5줄 추가</button>
     </div>
 
+    <label class="toggle" for="show-free">
+      <input type="checkbox" id="show-free">
+      <span class="toggle-ui" aria-hidden="true"></span>
+      <span>수수료 없는 금액도 입력하기</span>
+    </label>
+
+    <div id="fbox" class="mbox" hidden>
+      <div class="table-wrap">
+        <table id="ftbl">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th class="l">메모</th>
+              <th>개당 금액</th>
+              <th class="c">수량</th>
+              <th>금액</th>
+              <th><span hidden>삭제</span></th>
+            </tr>
+          </thead>
+          <tbody id="frees"></tbody>
+          <tfoot>
+            <tr>
+              <td></td>
+              <td class="l">수수료 없음 합계</td>
+              <td></td>
+              <td id="ft-qty" class="c">0</td>
+              <td id="ft-sum">0</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn small" id="add-free">+ 줄 추가</button>
+      </div>
+    </div>
+
     <div class="total" aria-live="polite">
       <div class="lbl" id="total-lbl">실수령액 합계</div>
       <div class="copyable">
@@ -267,6 +305,7 @@ td .cp { padding: 4px 8px; }
         <span class="big" id="big">0</span>
       </div>
       <div class="big-kr" id="big-kr"></div>
+      <div class="big-kr" id="big-break" hidden></div>
     </div>
   </section>
 
@@ -287,7 +326,7 @@ td .cp { padding: 4px 8px; }
     <div class="actions"><button type="button" class="btn small" id="add-cost">+ 비용 추가</button></div>
 
     <div class="flow" aria-live="polite">
-      <span><small>실수령 합계</small><span id="f-net">0</span></span>
+      <span><small id="f-net-lbl">실수령 합계</small><span id="f-net">0</span></span>
       <span class="op">−</span>
       <span class="minus"><small>공통 비용</small><span id="f-cost">0</span></span>
       <span class="op">=</span>
@@ -347,14 +386,14 @@ td .cp { padding: 4px 8px; }
     </div>
   </section>
 
-   <p class="foot">
+  <p class="foot">
     ❓비율은 기본 1이에요. 공대장만 더 받으면 1.5, 절반만 받는 사람은 0.5처럼 적으면 그 비율대로 나눠요.<br>
     ❓"0 자동 붙이기"를 000으로 두면 47만 쳐도 47,000으로, 0000으로 두면 470,000으로 들어가요(공통 비용 칸도 같아요).<br>
     ❓메모 칸은 한 번 쓴 이름을 기억해 두었다가 다음에 목록으로 보여줘요.<br>
     ❓엑셀에서 금액 열을 복사해 금액 칸에 붙여넣으면 여러 줄이 한 번에 채워지고, 붙여넣은 값은 0을 붙이지 않고 그대로 들어가요.<br>
     ❓수수료와 분배 금액은 1 단위 미만을 버림해서 계산하고, 입력한 내용은 이 브라우저에 저장돼요.
   </p>
-  <p class="foot credit">© 쿠즈키 (zkyyyyy1004)</p>
+  <p class="foot credit">© 쿠즈키 (zkyyyy1004)</p>
 </main>
 
 <div class="modal" id="modal" hidden role="dialog" aria-modal="true" aria-label="분배 결과 이미지">
@@ -443,10 +482,12 @@ const newMember = () => ({ name: '', ratio: 1, paid: false });
 const defName = i => i === 0 ? '공대장' : '공대원 ' + (i + 1);
 const isAutoName = n => n === '공대장' || /^공대원 \d+$/.test(n || '');
 let showMembers = false;
+let showFree = false;
+let frees = [];
 
 /* ---------- 저장 ---------- */
 function save() {
-  try { localStorage.setItem(KEY, JSON.stringify({ mode, rows, unit, costs, members, people: members.length, showMembers })); } catch (e) {}
+  try { localStorage.setItem(KEY, JSON.stringify({ mode, rows, unit, costs, members, people: members.length, showMembers, showFree, frees })); } catch (e) {}
 }
 function load() {
   try { const h = JSON.parse(localStorage.getItem(HKEY)); if (Array.isArray(h)) memoHist = h.filter(s => typeof s === 'string'); } catch (e) {}
@@ -464,6 +505,8 @@ function load() {
         members = Array.from({ length: n }, newMember);
       }
       showMembers = !!d.showMembers;
+      showFree = !!d.showFree;
+      if (Array.isArray(d.frees)) frees = d.frees.map(r => ({ memo: r.memo || '', amt: r.amt || 0, qty: r.qty > 0 ? r.qty : 1 }));
       if (!costs.length) costs = [{ memo: '', amt: 0 }];
       return;
     }
@@ -508,6 +551,22 @@ function rowHTML(r, i) {
 function build() {
   $('tbl').className = unit === 1000 ? 'u3' : unit === 10000 ? 'u4' : '';
   tbody.innerHTML = rows.map(rowHTML).join('');
+  buildFrees();
+}
+
+/* ---------- 수수료 없는 금액 ---------- */
+function buildFrees() {
+  if (!frees.length) frees = Array.from({ length: 3 }, blank);
+  $('ftbl').className = unit === 1000 ? 'u3' : unit === 10000 ? 'u4' : '';
+  const s = sfx();
+  $('frees').innerHTML = frees.map((r, i) => `<tr>
+    <td class="idx">${i + 1}</td>
+    <td class="l"><input id="fmemo-${i}" data-i="${i}" data-f="memo" list="items" placeholder="메모" value="${esc(r.memo)}"></td>
+    <td class="amt-cell"><input id="famt-${i}" class="num amt" data-i="${i}" data-f="amt" inputmode="decimal" autocomplete="off" placeholder="0" value="${shown(r.amt)}">${s ? `<span class="suffix">${s}</span>` : ''}</td>
+    <td class="qty-cell"><input id="fqty-${i}" class="num qty" data-i="${i}" data-f="qty" inputmode="numeric" autocomplete="off" value="${r.qty}"></td>
+    <td class="out net" id="fsum-${i}"></td>
+    <td class="del"><button type="button" class="x" data-del="${i}" aria-label="${i + 1}번 줄 삭제">×</button></td>
+  </tr>`).join('');
   buildCosts();
 }
 
@@ -548,8 +607,12 @@ function compute() {
     if (r.amt) tq += r.qty || 0;
     return { ...c, cum: tn, on: !!(r.amt && r.qty) };
   });
+  let tfree = 0, tfq = 0;
+  const fitems = frees.map(r => { const v = (r.amt || 0) * (r.qty || 0); if (r.amt) tfq += r.qty || 0; tfree += v; return { v, on: !!v }; });
+  const freeOn = showFree ? tfree : 0;
+  const tall = tn + freeOn;
   const tc = costs.reduce((a, c) => a + (c.amt || 0), 0);
-  const pool = Math.max(0, tn - tc);
+  const pool = Math.max(0, tall - tc);
   const R = m => showMembers ? (m.ratio || 0) : 1;
   const sumR = members.reduce((a, m) => a + R(m), 0);
   const shares = members.map(m => sumR ? Math.floor(pool * R(m) / sumR) : 0);
@@ -558,7 +621,7 @@ function compute() {
   const allOne = !showMembers || members.every(m => m.ratio === 1);
   const paidN = members.filter(m => m.paid).length;
   const unpaid = shares.reduce((a, s, i) => a + (members[i].paid ? 0 : s), 0);
-  return { items, tg, tf, tn, tq, tc, pool, sumR, shares, unitShare, rem, allOne, paidN, unpaid };
+  return { items, fitems, tfree, tfq, freeOn, tall, tg, tf, tn, tq, tc, pool, sumR, shares, unitShare, rem, allOne, paidN, unpaid };
 }
 function update() {
   S = compute();
@@ -571,12 +634,19 @@ function update() {
   $('t-qty').textContent = fmt(S.tq);
   $('t-fee').textContent = '−' + fmt(S.tf);
   $('t-net').textContent = fmt(mode === 'net' ? S.tn : S.tg);
-  S.big = mode === 'net' ? S.tn : S.tg;
+  S.fitems.forEach((c, i) => { const el = $('fsum-' + i); if (el) el.textContent = c.on ? fmt(c.v) : ''; });
+  $('ft-qty').textContent = fmt(S.tfq);
+  $('ft-sum').textContent = fmt(S.tfree);
+  const withFree = showFree && S.tfree > 0;
+  S.big = mode === 'net' ? S.tall : S.tg;
   $('big').textContent = fmt(S.big);
   $('big-kr').textContent = toKr(S.big);
-  $('total-lbl').textContent = mode === 'net' ? '실수령액 합계' : '올릴 금액 합계';
+  $('total-lbl').textContent = mode === 'net' ? (withFree ? '받는 금액 합계' : '실수령액 합계') : '올릴 금액 합계';
+  $('big-break').hidden = !(withFree && mode === 'net');
+  $('big-break').textContent = `판매 실수령 ${fmt(S.tn)} + 수수료 없음 ${fmt(S.tfree)}`;
 
-  $('f-net').textContent = fmt(S.tn);
+  $('f-net-lbl').textContent = withFree ? '받는 금액 합계' : '실수령 합계';
+  $('f-net').textContent = fmt(S.tall);
   $('f-cost').textContent = fmt(S.tc);
   $('f-pool').textContent = fmt(S.pool);
 
@@ -766,6 +836,7 @@ $('clear').addEventListener('click', () => {
   }
   clearTimeout(clearTimer); clearArmed = false; b.textContent = '전체 지우기';
   rows = Array.from({ length: 5 }, blank);
+  frees = Array.from({ length: 3 }, blank);
   costs = [{ memo: '', amt: 0 }];
   members.forEach(m => m.paid = false);
   build(); $('amt-0').focus();
@@ -792,7 +863,11 @@ $('copy').addEventListener('click', e => {
     const c = S.items[i]; if (!c.on) return;
     lines.push([r.memo || '', r.amt, r.qty, c.fee, mode === 'net' ? c.net : c.gross, c.cum].join('\t'));
   });
-  lines.push('', ['실수령 합계', S.tn].join('\t'));
+  if (showFree && S.tfree) {
+    lines.push('', ['수수료 없음', '개당 금액', '수량', '', '금액'].join('\t'));
+    frees.forEach((r, i) => { if (S.fitems[i].on) lines.push([r.memo || '', r.amt, r.qty, '', S.fitems[i].v].join('\t')); });
+  }
+  lines.push('', [showFree && S.tfree ? '받는 금액 합계' : '실수령 합계', S.tall].join('\t'));
   costs.forEach(c => { if (c.amt) lines.push([c.memo || '공통 비용', -c.amt].join('\t')); });
   lines.push(['분배할 금액', S.pool].join('\t'), '', ['이름', '비율', '받을 금액', '지급'].join('\t'));
   if (showMembers) members.forEach((m, i) => lines.push([m.name || defName(i), ratioText(m.ratio), S.shares[i], m.paid ? 'O' : ''].join('\t')));
@@ -810,9 +885,11 @@ async function makeImage() {
   const M = '"IBM Plex Mono", ui-monospace, Menlo, monospace';
   const items = rows.map((r, i) => ({ r, c: S.items[i] })).filter(x => x.c.on);
   const costList = costs.filter(c => c.amt);
+  const freeList = showFree ? frees.map((r, i) => ({ r, v: S.fitems[i].v })).filter(x => x.v) : [];
   const W = 880, P = 40, ROW = 38;
   const H = P + 110 + 30
     + 40 + Math.max(1, items.length) * ROW + 16
+    + (freeList.length ? 22 + 40 + freeList.length * ROW : 0)
     + 44 + (costList.length ? costList.length * 30 + 10 : 0) + 56
     + 40 + (showMembers ? members.length * ROW : ROW) + 24
     + 40 + P;
@@ -839,7 +916,7 @@ async function makeImage() {
   const d = new Date();
   const ds = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   text(ds, P + 108, y + 80, `500 14px ${M}`, C.muted);
-  text('made by 쿠즈키 · zkyyyyy1004', W - P, y + 22, `500 14px ${F}`, C.accent, 'right');
+  text('made by 쿠즈키 · zkyyyy1004', W - P, y + 22, `500 14px ${F}`, C.accent, 'right');
   y += 110 + 30;
 
   // 판매 목록
@@ -861,9 +938,24 @@ async function makeImage() {
   });
   y += 16 - ROW / 2 + 22;
 
+  // 수수료 없음
+  if (freeList.length) {
+    y += 22 - 22 + 4;
+    hdr([['수수료 없음', P + 12, 'left'], ['수량', P + 430, 'center'], ['금액', R - 12, 'right']], y);
+    y += 16 + ROW / 2 + 4;
+    freeList.forEach(({ r, v }) => {
+      text(fit(r.memo || '(메모 없음)', 340, `500 16px ${F}`), P + 12, y, `500 16px ${F}`, C.fg);
+      text('×' + fmt(r.qty), P + 430, y, `500 15px ${M}`, C.muted, 'center');
+      text(fmt(v), R - 12, y, `600 16px ${M}`, C.fg, 'right');
+      g.strokeStyle = C.line; g.beginPath(); g.moveTo(P, y + ROW / 2); g.lineTo(R, y + ROW / 2); g.stroke();
+      y += ROW;
+    });
+    y += 16 - ROW / 2 + 22;
+  }
+
   // 합계 흐름
-  text('실수령 합계', P + 12, y, `500 15px ${F}`, C.muted);
-  text(fmt(S.tn), R - 12, y, `600 18px ${M}`, C.fg, 'right');
+  text(freeList.length ? '받는 금액 합계' : '실수령 합계', P + 12, y, `500 15px ${F}`, C.muted);
+  text(fmt(S.tall), R - 12, y, `600 18px ${M}`, C.fg, 'right');
   y += 22;
   if (costList.length) {
     y += 8;
@@ -931,7 +1023,7 @@ $('img-down').onclick = () => {
   const d = new Date();
   const a = document.createElement('a');
   a.href = imgUrl;
-  a.download = `zkyyyyy1004-split-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}.png`;
+  a.download = `zkyyyy1004-split-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}.png`;
   document.body.appendChild(a); a.click(); a.remove();
 };
 $('img-copy').onclick = async () => {
@@ -959,6 +1051,43 @@ let savedTheme = null;
 try { savedTheme = localStorage.getItem(TKEY); } catch (e) {}
 applyTheme(savedTheme === 'light' ? 'light' : 'dark');
 
+/* ---------- 수수료 없는 금액 이벤트 ---------- */
+$('frees').addEventListener('input', e => {
+  const t = e.target; if (!t.dataset.f) return;
+  const i = +t.dataset.i;
+  if (t.dataset.f === 'amt') { const { amt, display } = readTyped(t.value); frees[i].amt = amt; t.value = display; }
+  else if (t.dataset.f === 'qty') { const v = parse(t.value); frees[i].qty = v; t.value = v ? String(v) : ''; }
+  else frees[i].memo = t.value;
+  update();
+});
+$('frees').addEventListener('focusout', e => {
+  const t = e.target, i = +t.dataset.i;
+  if (t.dataset.f === 'qty' && !parse(t.value)) { frees[i].qty = 1; t.value = '1'; update(); }
+  if (t.dataset.f === 'amt') t.value = shown(frees[i].amt);
+  if (t.dataset.f === 'memo') remember(t.value);
+});
+$('frees').addEventListener('keydown', e => {
+  const t = e.target;
+  if (e.key !== 'Enter' || !t.dataset.f) return;
+  e.preventDefault();
+  const i = +t.dataset.i;
+  if (i + 1 >= frees.length) { frees.push(blank()); buildFrees(); }
+  $('f' + t.dataset.f + '-' + (i + 1)).focus();
+});
+$('frees').addEventListener('click', e => {
+  const b = e.target.closest('[data-del]'); if (!b) return;
+  frees.splice(+b.dataset.del, 1);
+  buildFrees();
+});
+$('add-free').onclick = () => { frees.push(blank()); buildFrees(); $('famt-' + (frees.length - 1)).focus(); };
+function setFree(on) {
+  showFree = on;
+  $('show-free').checked = on;
+  $('fbox').hidden = !on;
+  update();
+}
+$('show-free').addEventListener('change', e => setFree(e.target.checked));
+
 /* ---------- 인원별 체크 열기 ---------- */
 function setShow(on) {
   showMembers = on;
@@ -976,6 +1105,7 @@ $('u3').setAttribute('aria-pressed', unit === 1000);
 $('u4').setAttribute('aria-pressed', unit === 10000);
 setMode(mode);
 setShow(showMembers);
+setFree(showFree);
 </script>
 
 </body>
