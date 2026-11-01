@@ -925,14 +925,18 @@ async function makeImage() {
     g.fillStyle = C.bg; g.fillRect(P, yy - 16, W - 2 * P, 32);
     labels.forEach(([s, x, a]) => text(s, x, yy, `500 13px ${F}`, C.muted, a));
   };
-  hdr([['판매 목록', P + 12, 'left'], ['수량', P + 430, 'center'], ['수수료', R - 180, 'right'], ['실수령액', R - 12, 'right']], y);
+  const X = { no: P + 16, memo: P + 40, price: P + 370, qty: P + 420, fee: P + 545, net: P + 665 };
+  hdr([['#', X.no, 'center'], ['판매 목록', X.memo, 'left'], ['개당 금액', X.price, 'right'], ['수량', X.qty, 'center'], ['수수료', X.fee, 'right'], ['실수령액', X.net, 'right'], ['누적', R - 12, 'right']], y);
   y += 16 + ROW / 2 + 4;
-  if (!items.length) { text('입력한 판매 내역이 없어요', P + 12, y, `500 15px ${F}`, C.muted); y += ROW; }
-  items.forEach(({ r, c }) => {
-    text(fit(r.memo || '(메모 없음)', 340, `500 16px ${F}`), P + 12, y, `500 16px ${F}`, C.fg);
-    text('×' + fmt(r.qty), P + 430, y, `500 15px ${M}`, C.muted, 'center');
-    text('−' + fmt(c.fee), R - 180, y, `500 15px ${M}`, C.minus, 'right');
-    text(fmt(c.net), R - 12, y, `600 16px ${M}`, C.fg, 'right');
+  if (!items.length) { text('입력한 판매 내역이 없어요', X.memo, y, `500 15px ${F}`, C.muted); y += ROW; }
+  items.forEach(({ r, c }, n) => {
+    text(String(n + 1), X.no, y, `500 14px ${M}`, C.muted, 'center');
+    text(fit(r.memo || '(메모 없음)', 205, `500 16px ${F}`), X.memo, y, `500 16px ${F}`, C.fg);
+    text(fmt(r.amt), X.price, y, `500 15px ${M}`, C.fg, 'right');
+    text('×' + fmt(r.qty), X.qty, y, `500 15px ${M}`, C.muted, 'center');
+    text('−' + fmt(c.fee), X.fee, y, `500 15px ${M}`, C.minus, 'right');
+    text(fmt(c.net), X.net, y, `600 16px ${M}`, C.fg, 'right');
+    text(fmt(c.cum), R - 12, y, `500 15px ${M}`, C.muted, 'right');
     g.strokeStyle = C.line; g.beginPath(); g.moveTo(P, y + ROW / 2); g.lineTo(R, y + ROW / 2); g.stroke();
     y += ROW;
   });
@@ -941,11 +945,13 @@ async function makeImage() {
   // 수수료 없음
   if (freeList.length) {
     y += 22 - 22 + 4;
-    hdr([['수수료 없음', P + 12, 'left'], ['수량', P + 430, 'center'], ['금액', R - 12, 'right']], y);
+    hdr([['#', X.no, 'center'], ['수수료 없음', X.memo, 'left'], ['개당 금액', X.price, 'right'], ['수량', X.qty, 'center'], ['금액', R - 12, 'right']], y);
     y += 16 + ROW / 2 + 4;
-    freeList.forEach(({ r, v }) => {
-      text(fit(r.memo || '(메모 없음)', 340, `500 16px ${F}`), P + 12, y, `500 16px ${F}`, C.fg);
-      text('×' + fmt(r.qty), P + 430, y, `500 15px ${M}`, C.muted, 'center');
+    freeList.forEach(({ r, v }, n) => {
+      text(String(n + 1), X.no, y, `500 14px ${M}`, C.muted, 'center');
+      text(fit(r.memo || '(메모 없음)', 205, `500 16px ${F}`), X.memo, y, `500 16px ${F}`, C.fg);
+      text(fmt(r.amt), X.price, y, `500 15px ${M}`, C.fg, 'right');
+      text('×' + fmt(r.qty), X.qty, y, `500 15px ${M}`, C.muted, 'center');
       text(fmt(v), R - 12, y, `600 16px ${M}`, C.fg, 'right');
       g.strokeStyle = C.line; g.beginPath(); g.moveTo(P, y + ROW / 2); g.lineTo(R, y + ROW / 2); g.stroke();
       y += ROW;
